@@ -1,0 +1,42 @@
+name: Appium Mobile E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  appium-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        working-directory: appium-tests
+        run: npm install
+
+      - name: Run Appium Tests (Simulation)
+        working-directory: appium-tests
+        run: npm test
+
+      - name: Upload Test Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-test-report
+          path: appium-test-report.xlsx
+
+      - name: Publish Summary
+        run: |
+          echo "## 📱 Appium Mobile E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework:** WebDriverIO + Appium" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Cases:** 400+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Report:** Download \`appium-test-report.xlsx\` from Artifacts" >> $GITHUB_STEP_SUMMARY

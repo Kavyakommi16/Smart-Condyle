@@ -1,0 +1,73 @@
+name: Load Testing
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install backend dependencies
+        working-directory: smart_condyle_backend
+        run: |
+          pip install fastapi uvicorn pydantic python-dotenv aiosmtplib jinja2
+
+      - name: Start backend server
+        working-directory: smart_condyle_backend
+        run: |
+          mkdir -p uploads data
+          uvicorn main:app --host 0.0.0.0 --port 8000 &
+          sleep 5
+          curl -s http://localhost:8000/ || echo "Server check"
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6 -y
+
+      - name: Run load test
+        working-directory: load-testing
+        run: |
+          k6 run load-test.js --env API_URL=http://localhost:8000 --out json=load-test-results.json || true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Generate Excel report
+        working-directory: load-testing
+        run: |
+          npm install
+          node generate-report.js
+
+      - name: Upload Load Test Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-test-report
+          path: |
+            load-testing/load-test-report.xlsx
+            load-testing/load-test-results.json
+
+      - name: Job Summary
+        run: |
+          echo "## 📊 Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Virtual Users:** 100" >> $GITHUB_STEP_SUMMARY
+          echo "- **Duration:** 1 minute" >> $GITHUB_STEP_SUMMARY
+          echo "- **Report:** Download from Artifacts" >> $GITHUB_STEP_SUMMARY

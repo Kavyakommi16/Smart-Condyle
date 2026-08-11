@@ -1,0 +1,76 @@
+name: Security Review
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  security-review:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install openpyxl
+
+      - name: Run SAST Scanner
+        run: |
+          cd security-scripts
+          python sast-scanner.py ../smart_condyle_backend
+
+      - name: Run API Inventory Discovery
+        run: |
+          cd security-scripts
+          python api-inventory.py ../smart_condyle_backend
+
+      - name: Generate Security Reports
+        run: |
+          cd security-scripts
+          python report-generator.py
+
+      - name: Run pip-audit (Dependency Scan)
+        continue-on-error: true
+        run: |
+          pip install pip-audit
+          pip install -r smart_condyle_backend/requirements.txt 2>/dev/null || true
+          pip-audit --format json --output security-scripts/pip-audit-results.json 2>/dev/null || echo "[]" > security-scripts/pip-audit-results.json
+
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            Vulnerability Test Results/
+            security-scripts/sast-results.json
+            security-scripts/api-inventory.json
+
+      - name: Publish Summary
+        run: |
+          echo "## 🔒 Security Review Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f "Vulnerability Test Results/security-review.md" ]; then
+            head -30 "Vulnerability Test Results/security-review.md" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 Download full reports from **Artifacts**" >> $GITHUB_STEP_SUMMARY
+
+      - name: Check for Critical Findings
+        run: |
+          if [ -f security-scripts/sast-results.json ]; then
+            CRITICAL=$(python3 -c "import json; data=json.load(open('security-scripts/sast-results.json')); print(sum(1 for f in data if f['severity']=='Critical'))")
+            echo "Critical findings: $CRITICAL"
+            if [ "$CRITICAL" -gt "0" ]; then
+              echo "⚠️ $CRITICAL critical vulnerabilities found. Review required."
+            fi
+          fi

@@ -1,0 +1,47 @@
+name: Selenium Web E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  selenium-tests:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Chrome environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Install dependencies
+        working-directory: selenium-tests
+        run: npm install
+
+      - name: Run Selenium Tests (Simulation)
+        working-directory: selenium-tests
+        run: npm test
+
+      - name: Upload Test Report Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: selenium-test-report
+          path: selenium-test-report.xlsx
+
+      - name: Publish Summary
+        run: |
+          echo "## 🌐 Selenium Web E2E Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework:** Selenium WebDriver" >> $GITHUB_STEP_SUMMARY
+          echo "- **Test Cases:** 400+" >> $GITHUB_STEP_SUMMARY
+          echo "- **Report:** Download \`selenium-test-report.xlsx\` from Artifacts" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,13 @@
+{
+  "name": "smart-condyle-appium-tests",
+  "version": "1.0.0",
+  "description": "Appium E2E tests for Smart Condyle mobile app",
+  "scripts": {
+    "test": "node tests/app-e2e-tests.js",
+    "report": "node helpers/excel-reporter.js"
+  },
+  "dependencies": {
+    "webdriverio": "^8.36.0",
+    "exceljs": "^4.4.0"
+  }
+}

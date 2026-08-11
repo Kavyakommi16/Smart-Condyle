@@ -1,0 +1,11 @@
+{
+  "name": "smart-condyle-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing for Smart Condyle API",
+  "scripts": {
+    "test": "node generate-report.js"
+  },
+  "dependencies": {
+    "exceljs": "^4.4.0"
+  }
+}

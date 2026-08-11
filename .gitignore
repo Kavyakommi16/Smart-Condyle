@@ -1,0 +1,28 @@
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Expo
+.expo/
+dist/
+web-build/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Appium / Selenium / Load Testing
+load-test-results.json
+*.xlsx
+pip-audit-results.json
+api-inventory.json
+sast-results.json

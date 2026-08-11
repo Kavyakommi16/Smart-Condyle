@@ -1,0 +1,14 @@
+{
+  "name": "smart-condyle-selenium-tests",
+  "version": "1.0.0",
+  "description": "Selenium E2E tests for Smart Condyle web frontend",
+  "scripts": {
+    "test": "node tests/login-tests.js",
+    "report": "node helpers/excel-reporter.js"
+  },
+  "dependencies": {
+    "selenium-webdriver": "^4.18.0",
+    "chromedriver": "^131.0.0",
+    "exceljs": "^4.4.0"
+  }
+}

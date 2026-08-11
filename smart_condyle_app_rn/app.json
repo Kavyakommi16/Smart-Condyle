@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "Smart Condyle",
+    "slug": "smart-condyle-app-rn",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#ffffff",
+    "splash": {
+      "backgroundColor": "#ffffff"
+    },
+    "icon": "./assets/logo.png",
+    "android": {
+      "package": "com.smartcondyle.app"
+    },
+    "web": {
+      "favicon": ""
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3bd4073d-65c6-40dd-ab2e-510f542a7c00"
+      }
+    }
+  }
+}
+
