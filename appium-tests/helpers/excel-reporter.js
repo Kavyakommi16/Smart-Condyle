@@ -84,6 +84,26 @@ async function generateReport(results) {
   const outputPath = path.join(__dirname, '..', 'appium-test-report.xlsx');
   await workbook.xlsx.writeFile(outputPath);
   console.log(`✅ Appium Test Report generated: ${outputPath} (${results.length} test cases)`);
+
+  // Generate Markdown Summary for GitHub Actions
+  const fs = require('fs');
+  const mdContent = `
+## 📱 Mobile E2E Test Execution Summary (Build #1)
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| **Total Tests** | ${total} | 📋 |
+| **Passed** | ${passed} | ✅ |
+| **Failed** | ${failed} | ${failed > 0 ? '❌' : '➖'} |
+| **Pass Rate** | ${((passed/total)*100).toFixed(2)}% | 🏆 |
+
+### 📊 Results by Category
+
+| Category | Total | Passed | Failed |
+|----------|-------|--------|--------|
+${Object.entries(categories).map(([cat, data]) => `| ${cat} | ${data.total} | ${data.passed} | ${data.failed} |`).join('\\n')}
+`;
+  fs.writeFileSync(path.join(__dirname, '..', 'summary.md'), mdContent);
 }
 
 module.exports = { generateReport };

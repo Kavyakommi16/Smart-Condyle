@@ -41,7 +41,6 @@ jobs:
 
       - name: Publish Summary
         run: |
-          echo "## 🌐 Selenium Web E2E Tests" >> $GITHUB_STEP_SUMMARY
-          echo "- **Framework:** Selenium WebDriver" >> $GITHUB_STEP_SUMMARY
-          echo "- **Test Cases:** 400+" >> $GITHUB_STEP_SUMMARY
-          echo "- **Report:** Download \`selenium-test-report.xlsx\` from Artifacts" >> $GITHUB_STEP_SUMMARY
+          cat selenium-tests/summary.md >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "📥 **Download the detailed \`selenium-test-report.xlsx\` from the Artifacts section below!**" >> $GITHUB_STEP_SUMMARY
