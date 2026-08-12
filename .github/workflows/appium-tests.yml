@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: appium-test-report
-          path: appium-test-report.xlsx
+          path: appium-tests/appium-test-report.xlsx
 
       - name: Publish Summary
         run: |

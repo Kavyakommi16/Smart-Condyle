@@ -37,7 +37,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: selenium-test-report
-          path: selenium-test-report.xlsx
+          path: selenium-tests/selenium-test-report.xlsx
 
       - name: Publish Summary
         run: |
