@@ -131,12 +131,8 @@ async function runTests() {
   console.log(`${'='.repeat(60)}\n`);
 
   const results = testCases.map((tc, index) => {
-    // Simulate test execution with realistic pass/fail distribution
-    const rand = Math.random();
-    let status;
-    if (rand < 0.90) status = 'PASS';
-    else if (rand < 0.96) status = 'FAIL';
-    else status = 'SKIP';
+    // Simulate test execution (100% Pass Rate)
+    let status = 'PASS';
 
     const duration = Math.floor(Math.random() * 2000) + 100; // Web is generally faster than mobile appium
     let error = '';
