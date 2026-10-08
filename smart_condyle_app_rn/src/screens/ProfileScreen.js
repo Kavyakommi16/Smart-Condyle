@@ -5,12 +5,11 @@ import { clearSession, getSession } from '../services/authService';
 
 export default function ProfileScreen({ navigation }) {
   const [profile, setProfile] = useState({
-    name: 'Dr. Medical Specialist',
-    role: 'Oral & Maxillofacial Surgeon',
-    email: 'doctor@smartcondyle.ai',
-    hospital: 'General Medical Center',
-    department: 'Maxillofacial Surgery',
-    phone: '+91 9876543210',
+    name: '',
+    role: '',
+    email: '',
+    hospital: '',
+    phone: '',
     avatarUri: '',
   });
   const [isDark, setIsDark] = useState(false);
@@ -22,16 +21,28 @@ export default function ProfileScreen({ navigation }) {
 
   const loadProfile = async () => {
     const activeSessionUser = await getSession();
+    
+    // Optimistic UI update: show local session immediately
+    if (activeSessionUser) {
+      setProfile({
+        name: activeSessionUser.name || '',
+        role: 'Medical Professional',
+        email: activeSessionUser.email || '',
+        hospital: activeSessionUser.hospital || '',
+        phone: activeSessionUser.mobile || activeSessionUser.fullMobile || '',
+        avatarUri: activeSessionUser.avatarUri || '',
+      });
+    }
+
     const uid = activeSessionUser?.uid;
     const doctorProfile = await getDoctorProfile(uid);
 
     const merged = {
-      name: doctorProfile.name || activeSessionUser?.name || 'Dr. Medical Specialist',
-      role: doctorProfile.role || 'Oral & Maxillofacial Surgeon',
-      email: doctorProfile.email || activeSessionUser?.email || 'doctor@smartcondyle.ai',
-      hospital: doctorProfile.hospital || activeSessionUser?.hospital || 'General Medical Center',
-      department: doctorProfile.department || activeSessionUser?.department || 'Maxillofacial Surgery',
-      phone: doctorProfile.phone || activeSessionUser?.fullMobile || activeSessionUser?.mobile || '+91 9876543210',
+      name: doctorProfile.name || activeSessionUser?.name || 'Not specified',
+      role: doctorProfile.role || 'Medical Professional',
+      email: doctorProfile.email || activeSessionUser?.email || 'Not specified',
+      hospital: doctorProfile.hospital || activeSessionUser?.hospital || 'Not specified',
+      phone: doctorProfile.phone || activeSessionUser?.mobile || activeSessionUser?.fullMobile || 'Not specified',
       avatarUri: doctorProfile.avatarUri || activeSessionUser?.avatarUri || '',
     };
 
@@ -84,22 +95,17 @@ export default function ProfileScreen({ navigation }) {
 
           <View style={[styles.infoRow, isDark && styles.darkRow]}>
             <Text style={[styles.infoLabel, isDark && styles.darkSubtext]}>Email:</Text>
-            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.email || 'N/A'}</Text>
+            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.email}</Text>
           </View>
 
           <View style={[styles.infoRow, isDark && styles.darkRow]}>
             <Text style={[styles.infoLabel, isDark && styles.darkSubtext]}>Phone:</Text>
-            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.phone || 'N/A'}</Text>
+            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.phone}</Text>
           </View>
 
           <View style={[styles.infoRow, isDark && styles.darkRow]}>
             <Text style={[styles.infoLabel, isDark && styles.darkSubtext]}>Hospital:</Text>
-            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.hospital || 'N/A'}</Text>
-          </View>
-
-          <View style={[styles.infoRow, isDark && styles.darkRow]}>
-            <Text style={[styles.infoLabel, isDark && styles.darkSubtext]}>Department:</Text>
-            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.department || 'N/A'}</Text>
+            <Text style={[styles.infoVal, isDark && styles.darkText]}>{profile.hospital}</Text>
           </View>
         </View>
 

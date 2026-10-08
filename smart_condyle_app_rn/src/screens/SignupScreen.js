@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image } from 'react-native';
-import { checkEmailExists, checkMobileExists, validatePassword, generateOTP, validateRealtimeEmail, sendRealtimeEmailOTP } from '../services/authService';
+import { registerUser, checkEmailExists, checkMobileExists, validatePassword, validateRealtimeEmail } from '../services/authService';
 
 const COUNTRY_CODES = [
   { code: '+91', country: 'India' },
@@ -20,8 +20,8 @@ export default function SignupScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [emailStatus, setEmailStatus] = useState(null);
   const [hospital, setHospital] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [hidePassword, setHidePassword] = useState(true);
 
@@ -42,13 +42,15 @@ export default function SignupScreen({ navigation }) {
     setErrorMsg('');
 
     if (!fullName.trim()) {
-      setErrorMsg('Full Name is required (e.g. Dr. John Doe).');
+      const msg = 'Full Name is required (e.g. Dr. John Doe).';
+      setErrorMsg(msg);
       return;
     }
     const cleanName = fullName.trim();
 
     if (!email.trim()) {
-      setErrorMsg('Email address is required.');
+      const msg = 'Email address is required.';
+      setErrorMsg(msg);
       return;
     }
     const cleanEmail = email.trim();
@@ -60,10 +62,24 @@ export default function SignupScreen({ navigation }) {
     }
 
     if (!hospital.trim()) {
-      setErrorMsg('Hospital or Clinic Name is required.');
+      const msg = 'Hospital or Clinic Name is required.';
+      setErrorMsg(msg);
       return;
     }
     const cleanHospital = hospital.trim();
+
+    if (!mobile.trim()) {
+      const msg = 'Mobile Number is required.';
+      setErrorMsg(msg);
+      return;
+    }
+    const cleanMobile = mobile.trim();
+    
+    if (cleanMobile.length !== 10) {
+      const msg = 'Mobile Number must be exactly 10 digits.';
+      setErrorMsg(msg);
+      return;
+    }
 
     const passCheck = validatePassword(password);
     if (!passCheck.valid) {
@@ -71,28 +87,21 @@ export default function SignupScreen({ navigation }) {
       return;
     }
 
-    if (password !== confirmPassword) {
-      setErrorMsg('Passwords do not match.');
-      return;
-    }
-
-    const generatedOTP = generateOTP();
-    sendRealtimeEmailOTP(cleanEmail, generatedOTP).catch(e => console.log(e));
-
     const pendingUser = {
       name: cleanName,
       email: cleanEmail,
-      emailOrPhone: cleanEmail,
-      isEmail: true,
       hospital: cleanHospital,
+      mobile: cleanMobile,
       password,
-      createdAt: new Date().toISOString(),
     };
 
-    navigation.navigate('OTPVerification', {
-      pendingUser,
-      generatedOTP,
-    });
+    const result = await registerUser(pendingUser);
+
+    if (result.success) {
+      navigation.replace('Login');
+    } else {
+      setErrorMsg(result.message || 'Registration failed. Please try again.');
+    }
   };
 
   return (
@@ -122,21 +131,21 @@ export default function SignupScreen({ navigation }) {
       <Text style={styles.label}>Full Name *</Text>
       <TextInput
         style={styles.input}
-        placeholder="e.g. Dr. John Doe"
         value={fullName}
         onChangeText={(text) => { setFullName(text); setErrorMsg(''); }}
+        autoComplete="off"
+        autoCorrect={false}
       />
 
       <Text style={styles.label}>Email Address * (Email linked to Google Auth)</Text>
       <TextInput
         style={[styles.input, emailStatus && (emailStatus.valid ? styles.validInput : styles.invalidInput)]}
-        placeholder="e.g. doctor123@gmail.com"
         value={email}
         onChangeText={handleEmailChange}
         keyboardType="email-address"
         autoCapitalize="none"
-        textContentType="emailAddress"
-        autoComplete="email"
+        textContentType="none"
+        autoComplete="off"
       />
       {emailStatus ? (
         <Text style={[styles.realtimeText, emailStatus.valid ? styles.realtimeSuccess : styles.realtimeError]}>
@@ -146,27 +155,39 @@ export default function SignupScreen({ navigation }) {
       <Text style={styles.label}>Hospital / Clinic Name *</Text>
       <TextInput
         style={styles.input}
-        placeholder="e.g. General Medical Center"
         value={hospital}
         onChangeText={(text) => { setHospital(text); setErrorMsg(''); }}
+        autoComplete="off"
+        autoCorrect={false}
       />
 
-      <View style={styles.emailNoticeBox}>
-        <Text style={styles.emailNoticeText}>
-          📧 Verification Code (OTP) will be sent to your Email address above.
-        </Text>
-      </View>
+      <Text style={styles.label}>Mobile Number *</Text>
+      <TextInput
+        style={styles.input}
+        value={mobile}
+        onChangeText={(text) => {
+          const numericValue = text.replace(/[^0-9]/g, '');
+          setMobile(numericValue);
+          setErrorMsg('');
+        }}
+        keyboardType="number-pad"
+        maxLength={10}
+        autoComplete="off"
+        textContentType="none"
+        autoCorrect={false}
+      />
 
       <Text style={styles.label}>Password *</Text>
       <View style={styles.passwordContainer}>
         <TextInput
           style={styles.passwordInput}
-          placeholder="Min 8 chars (letters, numbers, & special char)"
           value={password}
           onChangeText={(text) => { setPassword(text); setErrorMsg(''); }}
           secureTextEntry={hidePassword}
           textContentType="newPassword"
-          autoComplete="password-new"
+          autoComplete="new-password"
+          autoCorrect={false}
+          importantForAutofill="no"
         />
         <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
           <Text style={styles.toggleText}>{hidePassword ? 'Show' : 'Hide'}</Text>
@@ -176,15 +197,6 @@ export default function SignupScreen({ navigation }) {
       <Text style={styles.reqHint}>
         🔒 Rules: 8+ chars, contains letters, numbers, and special chars (!@#$%^&*)
       </Text>
-
-      <Text style={styles.label}>Confirm Password *</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Re-enter your password"
-        value={confirmPassword}
-        onChangeText={(text) => { setConfirmPassword(text); setErrorMsg(''); }}
-        secureTextEntry={hidePassword}
-      />
 
       <TouchableOpacity style={styles.button} onPress={handleSignup} activeOpacity={0.7}>
         <Text style={styles.buttonText}>CREATE ACCOUNT</Text>

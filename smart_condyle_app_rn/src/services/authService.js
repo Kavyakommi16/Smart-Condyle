@@ -2,8 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SESSION_KEY = '@smart_condyle_active_session_v3';
 
-// Backend API URL - change this to your server's IP address
-const API_URL = 'http://10.15.232.189:8000';
+import { Platform } from 'react-native';
+
+const API_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
 
 // Password complexity regex: min 8 chars, at least 1 letter, 1 number, 1 special character
 export const validatePassword = (password) => {
@@ -63,6 +64,7 @@ export const registerUser = async (userData) => {
         email: userData.email,
         password: userData.password,
         hospital: userData.hospital || '',
+        mobile: userData.mobile || '',
       }),
     });
     const data = await response.json();
@@ -70,11 +72,11 @@ export const registerUser = async (userData) => {
     if (data.success) {
       return { success: true, user: data.user };
     } else {
-      return { success: false, error: data.message };
+      return { success: false, message: data.message };
     }
   } catch (err) {
     console.error('Register API error:', err.message);
-    return { success: false, error: 'Could not connect to server. Please check your connection.' };
+    return { success: false, message: 'Could not connect to server. Please check your connection.' };
   }
 };
 
@@ -101,7 +103,7 @@ export const getSession = async () => {
       const webData = window.localStorage.getItem(SESSION_KEY);
       if (webData) return JSON.parse(webData);
     }
-  } catch (e) {}
+  } catch (e) { }
   return null;
 };
 
@@ -111,7 +113,7 @@ export const clearSession = async () => {
     if (typeof window !== 'undefined' && window.localStorage) {
       window.localStorage.removeItem(SESSION_KEY);
     }
-  } catch (e) {}
+  } catch (e) { }
 };
 
 /**

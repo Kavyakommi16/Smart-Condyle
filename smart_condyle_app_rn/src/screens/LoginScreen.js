@@ -14,22 +14,15 @@ export default function LoginScreen({ navigation }) {
     setErrorMsg('');
 
     if (!identifier.trim() || !password) {
-      setErrorMsg('Please enter your registered email address or phone number and password.');
+      const msg = 'Please enter your registered email address and password.';
+      setErrorMsg(msg);
       return;
     }
 
     const result = await loginUser(identifier.trim(), password);
 
     if (!result.success) {
-      setErrorMsg(result.message);
-      Alert.alert(
-        "Login Failed",
-        "No registered account found matching these credentials. You must Sign Up before logging in.",
-        [
-          { text: "Sign Up Now", onPress: () => navigation.navigate('Signup') },
-          { text: "Try Again", style: "cancel" }
-        ]
-      );
+      setErrorMsg(result.message || "Invalid email or password.");
       return;
     }
 
@@ -60,10 +53,9 @@ export default function LoginScreen({ navigation }) {
           </View>
         ) : null}
 
-        <Text style={styles.label}>Email Address or Phone Number *</Text>
+        <Text style={styles.label}>Email Address *</Text>
         <TextInput
           style={styles.input}
-          placeholder="e.g. doctor123@gmail.com or 9876543210"
           value={identifier}
           onChangeText={(text) => {
             setIdentifier(text);
@@ -71,23 +63,26 @@ export default function LoginScreen({ navigation }) {
           }}
           autoCapitalize="none"
           keyboardType="email-address"
-          textContentType="emailAddress"
-          autoComplete="email"
+          textContentType="none"
+          autoComplete="off"
+          autoCorrect={false}
+          importantForAutofill="no"
         />
 
         <Text style={styles.label}>Password *</Text>
         <View style={styles.passwordContainer}>
           <TextInput
             style={styles.passwordInput}
-            placeholder="Enter your password"
             value={password}
             onChangeText={(text) => {
               setPassword(text);
               setErrorMsg('');
             }}
             secureTextEntry={hidePassword}
-            textContentType="password"
-            autoComplete="password"
+            textContentType="none"
+            autoComplete="new-password"
+            autoCorrect={false}
+            importantForAutofill="no"
           />
           <TouchableOpacity onPress={() => setHidePassword(!hidePassword)}>
             <Text style={styles.toggleText}>{hidePassword ? 'Show' : 'Hide'}</Text>

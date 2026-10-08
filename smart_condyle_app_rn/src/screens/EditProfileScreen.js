@@ -9,7 +9,6 @@ export default function EditProfileScreen({ navigation }) {
   const [role, setRole] = useState('');
   const [email, setEmail] = useState('');
   const [hospital, setHospital] = useState('');
-  const [department, setDepartment] = useState('');
   const [phone, setPhone] = useState('');
   const [avatarUri, setAvatarUri] = useState('');
   const [showWebcamModal, setShowWebcamModal] = useState(false);
@@ -17,6 +16,7 @@ export default function EditProfileScreen({ navigation }) {
   const [facingMode, setFacingMode] = useState('user'); // 'user' for front, 'environment' for back
   const [cameraError, setCameraError] = useState('');
   const [isDark, setIsDark] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
@@ -33,7 +33,6 @@ export default function EditProfileScreen({ navigation }) {
       setRole(p.role || '');
       setEmail(p.email || activeSession.email || '');
       setHospital(p.hospital || activeSession.hospital || '');
-      setDepartment(p.department || activeSession.department || '');
       setPhone(p.phone || activeSession.fullMobile || activeSession.mobile || '');
       setAvatarUri(p.avatarUri || activeSession.avatarUri || '');
     };
@@ -196,20 +195,34 @@ export default function EditProfileScreen({ navigation }) {
 
     const activeSession = await getSession();
     if (!activeSession) return;
+    
+    setIsSaving(true);
 
     const updatedProfile = {
       name: name.trim(),
       role: role.trim(),
       email: email.trim(),
       hospital: hospital.trim(),
-      department: department.trim(),
       phone: phone.trim(),
       avatarUri,
     };
 
-    await saveDoctorProfile(activeSession.uid, updatedProfile);
-    Alert.alert("Success 🎉", "Profile updated successfully!");
-    navigation.goBack();
+    try {
+      const res = await saveDoctorProfile(activeSession.uid, updatedProfile);
+      
+      // Removed blocking alerts for instant seamless navigation
+      if (res.success) {
+        navigation.goBack();
+      } else if (Platform.OS === 'web') {
+        window.alert("Failed to update profile.");
+      } else {
+        Alert.alert("Error", "Failed to update profile.");
+      }
+    } catch (err) {
+      if (Platform.OS === 'web') window.alert("Failed to update profile.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -235,87 +248,13 @@ export default function EditProfileScreen({ navigation }) {
           <Text style={styles.photoHint}>Change Profile Picture</Text>
 
           <View style={styles.photoBtnRow}>
-            <TouchableOpacity style={styles.photoBtn} onPress={handleCameraPhoto}>
-              <Text style={styles.photoBtnText}>📷 Live Camera</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity style={[styles.photoBtn, styles.galleryBtn]} onPress={handleGalleryPhoto}>
               <Text style={styles.photoBtnText}>🖼️ Choose Gallery</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        {/* Live Camera Stream Modal */}
-        <Modal
-          visible={showWebcamModal}
-          transparent={true}
-          animationType="fade"
-          onRequestClose={closeWebcamModal}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.webcamModalContent}>
-              <Text style={styles.webcamTitle}>📷 Live Camera Preview</Text>
-              
-              <View style={styles.webcamContainer}>
-                {cameraError ? (
-                  <View style={{ padding: 16, justifyContent: 'center', alignItems: 'center', flex: 1 }}>
-                    <Text style={{ color: '#FF3B30', textAlign: 'center', fontWeight: 'bold', marginBottom: 12 }}>⚠️ {cameraError}</Text>
-                    <TouchableOpacity
-                      style={{ backgroundColor: '#007AFF', paddingVertical: 10, paddingHorizontal: 16, borderRadius: 10 }}
-                      onPress={() => {
-                        closeWebcamModal();
-                        handleGalleryPhoto();
-                      }}
-                    >
-                      <Text style={{ color: '#FFF', fontWeight: 'bold', fontSize: 13 }}>📁 Pick Profile Photo from Device</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  Platform.OS === 'web' ? (
-                    <video
-                      ref={(el) => {
-                        videoRef.current = el;
-                        if (el && webcamStream && el.srcObject !== webcamStream) {
-                          el.srcObject = webcamStream;
-                          el.play().catch((e) => console.log("video play error:", e));
-                        }
-                      }}
-                      autoPlay
-                      playsInline
-                      muted
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        borderRadius: 12,
-                        transform: facingMode === 'user' ? 'scaleX(-1)' : 'none',
-                      }}
-                    />
-                  ) : null
-                )}
-              </View>
-
-              <TouchableOpacity
-                style={{ marginBottom: 12, paddingVertical: 6, paddingHorizontal: 14, borderRadius: 8, backgroundColor: '#E6F0FA' }}
-                onPress={() => setFacingMode(prev => prev === 'user' ? 'environment' : 'user')}
-              >
-                <Text style={{ color: '#007AFF', fontWeight: 'bold', fontSize: 13 }}>
-                  🔄 Switch Camera ({facingMode === 'user' ? 'Front' : 'Back'})
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.modalBtnRow}>
-                <TouchableOpacity style={styles.snapBtn} onPress={captureWebcamSnapshot}>
-                  <Text style={styles.snapBtnText}>📸 SNAP PHOTO</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.cancelBtn} onPress={closeWebcamModal}>
-                  <Text style={styles.cancelBtnText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        {/* Live Camera Modal Removed */}
 
         {/* Profile Input Fields */}
         <Text style={styles.label}>Doctor Name *</Text>
@@ -324,20 +263,21 @@ export default function EditProfileScreen({ navigation }) {
         <Text style={styles.label}>Specialization / Role</Text>
         <TextInput style={styles.input} value={role} onChangeText={setRole} placeholder="e.g. Oral & Maxillofacial Surgeon" />
 
-        <Text style={styles.label}>Email Address</Text>
-        <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
+        <Text style={styles.label}>Email Address (Cannot be changed)</Text>
+        <TextInput
+          style={[styles.input, { backgroundColor: '#F0F0F0', color: '#999' }]}
+          value={email}
+          editable={false}
+        />
 
         <Text style={styles.label}>Hospital / Clinic Name</Text>
         <TextInput style={styles.input} value={hospital} onChangeText={setHospital} placeholder="e.g. General Medical Center" />
 
-        <Text style={styles.label}>Department</Text>
-        <TextInput style={styles.input} value={department} onChangeText={setDepartment} placeholder="e.g. Maxillofacial Surgery" />
-
         <Text style={styles.label}>Phone Number</Text>
         <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
 
-        <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-          <Text style={styles.saveBtnText}>SAVE PROFILE CHANGES</Text>
+        <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={isSaving}>
+          <Text style={styles.saveBtnText}>{isSaving ? 'SAVING...' : 'SAVE PROFILE CHANGES'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

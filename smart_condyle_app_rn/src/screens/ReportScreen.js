@@ -77,6 +77,71 @@ export default function ReportScreen({ route, navigation }) {
     return nameMatch || idMatch;
   });
 
+  // Group by Patient ID
+  const groupedPatientsMap = {};
+  filteredPatients.forEach(p => {
+    const key = p.patientId || p.name;
+    if (!groupedPatientsMap[key]) {
+      groupedPatientsMap[key] = {
+        patientId: p.patientId,
+        name: p.name,
+        age: p.age,
+        gender: p.gender,
+        reports: []
+      };
+    }
+    groupedPatientsMap[key].reports.push(p);
+  });
+  
+  const groupedPatients = Object.values(groupedPatientsMap).map(group => {
+    // Attempt to sort newest first
+    group.reports.sort((a, b) => {
+      const dA = new Date(a.date);
+      const dB = new Date(b.date);
+      if (!isNaN(dA) && !isNaN(dB)) return dB - dA;
+      return 0;
+    });
+    return group;
+  });
+
+  const formatDate = (dateStr) => {
+    if (!dateStr || dateStr === 'Recent') return 'Recent';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch(e) {
+      return dateStr;
+    }
+  };
+
+  const getClinicalAssessment = (prediction, severity) => {
+    if (prediction?.includes('Fracture')) {
+      return `Based on the AI analysis of the provided radiographic scan, there is a high probability of a ${prediction.toLowerCase()}. The severity is assessed as ${severity}. Immediate clinical correlation is recommended.`;
+    }
+    return `The AI analysis of the provided radiographic scan indicates a normal condylar structure. No obvious fractures or abnormalities were detected.`;
+  };
+
+  const getDetailedFindings = (prediction) => {
+    if (prediction?.includes('Bilateral')) {
+      return "Significant cortical discontinuity is observed at both the left and right condylar processes. Joint space narrowing and possible displacement are noted. Requires comprehensive maxillofacial review.";
+    } else if (prediction?.includes('Left') || prediction?.includes('Right')) {
+      return `Cortical discontinuity and irregular bone margins are observed at the ${prediction.includes('Left') ? 'left' : 'right'} condylar process. Suspected localized trauma impact. Contralateral condyle appears unremarkable.`;
+    }
+    return "The temporomandibular joint (TMJ) and condylar processes appear intact. Bone margins are smooth with no visible cortical breaks, step-offs, or displacement. Joint spaces appear within normal limits.";
+  };
+
+  const getRecommendations = (severity) => {
+    if (severity === 'High') {
+      return "URGENT: Surgical consultation (OMFS) required. Advise CT Maxillofacial with 3D reconstruction for surgical planning. Soft diet and immobilization.";
+    } else if (severity === 'Medium') {
+      return "Surgical or conservative management review required. Consider closed reduction and intermaxillary fixation (IMF). Pain management and soft diet.";
+    } else if (severity === 'Low') {
+      return "Conservative management recommended. Soft diet, physical therapy, and close observation. Follow-up imaging in 2 weeks.";
+    }
+    return "No acute surgical intervention required. Routine dental and TMJ care advised. If symptoms persist, consider clinical re-evaluation.";
+  };
+
   const handleDownloadPDF = (patient) => {
     if (typeof window !== 'undefined' && window.open) {
       const reportHtml = `
@@ -122,6 +187,7 @@ export default function ReportScreen({ route, navigation }) {
             </div>
             <div class="row"><span class="label">Model Confidence:</span><span class="val">${patient?.confidence || 95}%</span></div>
             <div class="row"><span class="label">Condition Severity:</span><span class="val">${patient?.severity || 'None'}</span></div>
+            <div class="row"><span class="label">Report Date:</span><span class="val">${formatDate(patient?.date)}</span></div>
           </div>
 
           <div class="section">
@@ -129,6 +195,22 @@ export default function ReportScreen({ route, navigation }) {
             <div class="row"><span class="label">Injury Cause:</span><span class="val">${patient?.injury || 'None reported'}</span></div>
             <div class="row"><span class="label">Reported Symptoms:</span><span class="val">${patient?.symptoms || 'None reported'}</span></div>
             <div class="row"><span class="label">Medical History:</span><span class="val">${patient?.history || 'None reported'}</span></div>
+          </div>
+
+          <div class="section">
+            <h3 class="section-title">Detailed AI Clinical Report</h3>
+            <p style="font-size: 14px; line-height: 1.6; color: #333; margin-top: 0;">
+              <strong>Clinical Assessment:</strong><br/>
+              ${getClinicalAssessment(patient?.prediction, patient?.severity)}
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #333;">
+              <strong>Radiographic Findings:</strong><br/>
+              ${getDetailedFindings(patient?.prediction)}
+            </p>
+            <p style="font-size: 14px; line-height: 1.6; color: #333; margin-bottom: 0;">
+              <strong>Treatment Recommendations:</strong><br/>
+              ${getRecommendations(patient?.severity)}
+            </p>
           </div>
 
           <div class="footer">
@@ -196,9 +278,13 @@ export default function ReportScreen({ route, navigation }) {
 
             <View style={styles.row}>
               <Text style={[styles.label, isDark && styles.darkSubtext]}>AI Prediction:</Text>
-              <Text style={[styles.val, { fontWeight: 'bold', color: selectedPatient?.prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
+              <Text style={[styles.val, { fontWeight: 'bold', color: selectedPatient?.prediction?.includes('Fracture') ? '#FF3B30' : selectedPatient?.prediction?.includes('Invalid') ? '#888' : '#34C759' }]}>
                 {selectedPatient?.prediction || 'Normal'}
               </Text>
+            </View>
+            <View style={styles.row}>
+              <Text style={[styles.label, isDark && styles.darkSubtext]}>Report Date:</Text>
+              <Text style={[styles.val, isDark && styles.darkText]}>{formatDate(selectedPatient?.date)}</Text>
             </View>
             <View style={styles.row}>
               <Text style={[styles.label, isDark && styles.darkSubtext]}>Confidence:</Text>
@@ -211,10 +297,28 @@ export default function ReportScreen({ route, navigation }) {
 
             <View style={[styles.divider, isDark && styles.darkDivider]} />
 
-            <Text style={[styles.secTitle, isDark && styles.darkText]}>Symptoms & History</Text>
-            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>Injury: {selectedPatient?.injury || 'None reported'}</Text>
-            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>Symptoms: {selectedPatient?.symptoms || 'None reported'}</Text>
-            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>Medical History: {selectedPatient?.history || 'None reported'}</Text>
+            <Text style={[styles.secTitle, isDark && styles.darkText]}>Symptoms & Clinical History</Text>
+            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>• <Text style={{fontWeight: '600'}}>Injury:</Text> {selectedPatient?.injury || 'None reported'}</Text>
+            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>• <Text style={{fontWeight: '600'}}>Symptoms:</Text> {selectedPatient?.symptoms || 'None reported'}</Text>
+            <Text style={[styles.bodyText, isDark && styles.darkSubtext]}>• <Text style={{fontWeight: '600'}}>Medical History:</Text> {selectedPatient?.history || 'None reported'}</Text>
+
+            <View style={[styles.divider, isDark && styles.darkDivider]} />
+
+            <Text style={[styles.secTitle, isDark && styles.darkText]}>Detailed AI Clinical Report</Text>
+            <Text style={[styles.subSecTitle, isDark && styles.darkText]}>Clinical Assessment</Text>
+            <Text style={[styles.paragraph, isDark && styles.darkSubtext]}>
+              {getClinicalAssessment(selectedPatient?.prediction, selectedPatient?.severity)}
+            </Text>
+            
+            <Text style={[styles.subSecTitle, isDark && styles.darkText]}>Radiographic Findings</Text>
+            <Text style={[styles.paragraph, isDark && styles.darkSubtext]}>
+              {getDetailedFindings(selectedPatient?.prediction)}
+            </Text>
+
+            <Text style={[styles.subSecTitle, isDark && styles.darkText]}>Recommendations</Text>
+            <Text style={[styles.paragraph, isDark && styles.darkSubtext]}>
+              {getRecommendations(selectedPatient?.severity)}
+            </Text>
 
             <TouchableOpacity
               style={styles.downloadBtn}
@@ -225,10 +329,10 @@ export default function ReportScreen({ route, navigation }) {
           </View>
         </ScrollView>
       ) : (
-        // Patient Directory List View (Default)
+        // Patient Directory List View (Grouped)
         <View style={styles.listContainer}>
           <Text style={[styles.headerTitle, isDark && styles.darkText]}>Medical Reports Directory</Text>
-          <Text style={[styles.headerSub, isDark && styles.darkSubtext]}>Select a patient below to view their detailed medical report</Text>
+          <Text style={[styles.headerSub, isDark && styles.darkSubtext]}>Select a patient's report below to view details</Text>
 
           <TextInput
             style={[styles.searchInput, isDark && styles.darkSearchInput]}
@@ -239,30 +343,35 @@ export default function ReportScreen({ route, navigation }) {
           />
 
           <FlatList
-            data={filteredPatients}
-            keyExtractor={(item, index) => item.patientId || item.name + index}
+            data={groupedPatients}
+            keyExtractor={(item) => item.patientId || item.name}
             contentContainerStyle={{ paddingBottom: 60 }}
             renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.patientCard, isDark && styles.darkCard]}
-                onPress={() => setSelectedPatient(item)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.cardHeaderRow}>
+              <View style={[styles.patientCard, isDark && styles.darkCard]}>
+                <View style={[styles.cardHeaderRow, { borderBottomWidth: 1, borderBottomColor: isDark ? '#334155' : '#F0F0F0', paddingBottom: 10, marginBottom: 10 }]}>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.patientCardName, isDark && styles.darkText]}>👤 {item.name}</Text>
                     <Text style={styles.patientCardId}>ID: <Text style={{ fontWeight: 'bold' }}>{item.patientId}</Text></Text>
                   </View>
-                  <View style={[styles.statusBadge, { backgroundColor: item.prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
-                    <Text style={styles.statusBadgeText}>{item.prediction || 'Normal'}</Text>
-                  </View>
+                  <Text style={[styles.metaText, isDark && styles.darkSubtext]}>Age: {item.age} yrs ({item.gender})</Text>
                 </View>
 
-                <View style={styles.cardMetaRow}>
-                  <Text style={[styles.metaText, isDark && styles.darkSubtext]}>Age: {item.age} yrs ({item.gender})</Text>
-                  <Text style={styles.viewReportLink}>View Report ➔</Text>
-                </View>
-              </TouchableOpacity>
+                {item.reports.map((report, idx) => (
+                  <View key={report.id || idx} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 6, paddingVertical: 6, backgroundColor: isDark ? '#0F172A' : '#F8FAFC', paddingHorizontal: 12, borderRadius: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 12, color: isDark ? '#94A3B8' : '#666', marginBottom: 4 }}>
+                        📅 {formatDate(report.date)}
+                      </Text>
+                      <View style={[styles.statusBadge, { alignSelf: 'flex-start', backgroundColor: report.prediction?.includes('Fracture') ? '#FF3B30' : report.prediction?.includes('Invalid') ? '#888' : '#34C759' }]}>
+                        <Text style={styles.statusBadgeText}>{report.prediction || 'Normal'}</Text>
+                      </View>
+                    </View>
+                    <TouchableOpacity onPress={() => setSelectedPatient(report)} style={{ padding: 8 }}>
+                      <Text style={styles.viewReportLink}>View Report ➔</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
             )}
             ListEmptyComponent={
               <View style={styles.emptyBox}>
@@ -309,9 +418,11 @@ const styles = StyleSheet.create({
   val: { fontSize: 15, color: '#1A1A1A' },
   darkText: { color: '#F8FAFC' },
   darkSubtext: { color: '#94A3B8' },
-  secTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A1A', marginBottom: 8 },
+  secTitle: { fontSize: 17, fontWeight: 'bold', color: '#007AFF', marginBottom: 12 },
+  subSecTitle: { fontSize: 14, fontWeight: 'bold', color: '#1A1A1A', marginTop: 10, marginBottom: 4 },
   bodyText: { fontSize: 14, color: '#444', marginBottom: 6 },
-  downloadBtn: { backgroundColor: '#007AFF', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24 },
+  paragraph: { fontSize: 14, color: '#444', lineHeight: 20, marginBottom: 10 },
+  downloadBtn: { backgroundColor: '#007AFF', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 30 },
   downloadBtnText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   listContainer: { flex: 1, padding: 20 },
   headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#1A1A1A' },

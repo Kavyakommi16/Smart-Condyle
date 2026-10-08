@@ -57,15 +57,19 @@ export default function TreatmentScreen({ route, navigation }) {
           <Text style={styles.detail}>Severity: {patient?.severity}</Text>
         </View>
 
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Recommended Protocol</Text>
-          {getTreatmentSteps().map((step, i) => (
-            <Text key={i} style={styles.stepText}>{step}</Text>
-          ))}
-        </View>
+        {patient?.prediction !== 'Invalid Image (Not an X-Ray)' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>Recommended Protocol</Text>
+            {getTreatmentSteps().map((step, i) => (
+              <Text key={i} style={styles.stepText}>{step}</Text>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity style={styles.doneBtn} onPress={() => navigation.popToTop()}>
-          <Text style={styles.doneBtnText}>Treatment Plan Accepted</Text>
+          <Text style={styles.doneBtnText}>
+            {patient?.prediction === 'Invalid Image (Not an X-Ray)' ? 'Go Back' : 'Treatment Plan Accepted'}
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

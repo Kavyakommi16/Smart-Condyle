@@ -63,33 +63,45 @@ export default function DashboardScreen({ navigation, route }) {
 
   const cards = [
     {
-      title: "Patient Registration",
-      icon: "👤➕",
+      title: "New Patient",
+      subtext: "Register details",
+      icon: "🩺",
+      color: "rgba(52, 199, 89, 0.12)",
       onPress: () => navigation.navigate('PatientRegistration')
     },
     {
-      title: "Patient History",
+      title: "Records",
+      subtext: "Patient history",
       icon: "📋",
+      color: "rgba(255, 149, 0, 0.12)",
       onPress: () => navigation.navigate('PatientHistory')
     },
     {
-      title: "Upload X-ray / CT Scan",
-      icon: "📤",
+      title: "AI Analysis",
+      subtext: "Upload & predict",
+      icon: "🧠",
+      color: "rgba(0, 122, 255, 0.12)",
       onPress: handleUploadClick
     },
     {
-      title: "Medical Report",
+      title: "Reports",
+      subtext: "View & print PDF",
       icon: "📄",
+      color: "rgba(175, 82, 222, 0.12)",
       onPress: handleReportClick
     },
     {
       title: "Profile",
-      icon: "👤",
+      subtext: "Manage account",
+      icon: "👨‍⚕️",
+      color: "rgba(255, 45, 85, 0.12)",
       onPress: () => navigation.navigate('Profile')
     },
     {
       title: "Settings",
+      subtext: "App preferences",
       icon: "⚙️",
+      color: "rgba(142, 142, 147, 0.12)",
       onPress: () => navigation.navigate('Settings')
     }
   ];
@@ -113,14 +125,19 @@ export default function DashboardScreen({ navigation, route }) {
           <Text style={[styles.subtext, isDark && styles.darkSubtext]}>AI Based Condyle Fracture Detection</Text>
         </View>
 
-        <View style={styles.cardContainer}>
+        <View style={styles.gridContainer}>
           {cards.map((item, index) => (
-            <TouchableOpacity key={index} style={[styles.card, isDark && styles.darkCard]} onPress={item.onPress} activeOpacity={0.7}>
-              <View style={[styles.cardIconCircle, isDark && styles.darkIconCircle]}>
-                <Text style={styles.cardIcon}>{item.icon}</Text>
+            <TouchableOpacity 
+              key={index} 
+              style={[styles.gridCard, isDark && styles.darkGridCard]} 
+              onPress={item.onPress} 
+              activeOpacity={0.8}
+            >
+              <View style={[styles.iconWrapper, { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : item.color }]}>
+                <Text style={styles.largeIcon}>{item.icon}</Text>
               </View>
-              <Text style={[styles.cardTitle, isDark && styles.darkText]}>{item.title}</Text>
-              <Text style={styles.arrow}>➔</Text>
+              <Text style={[styles.gridTitle, isDark && styles.darkText]}>{item.title}</Text>
+              <Text style={styles.gridSubtext}>{item.subtext}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -156,32 +173,56 @@ const styles = StyleSheet.create({
   subtext: { fontSize: 15, color: '#666', marginTop: 4 },
   darkText: { color: '#F8FAFC' },
   darkSubtext: { color: '#94A3B8' },
-  cardContainer: { marginTop: 10 },
-  card: {
+  gridContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
-    borderRadius: 16,
-    marginBottom: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+    marginTop: 10,
+    maxWidth: 800,
+    alignSelf: 'center',
+    width: '100%',
   },
-  darkCard: { backgroundColor: '#1E293B', borderColor: '#334155', borderWidth: 1 },
-  cardIconCircle: {
-    width: 48,
-    height: 48,
+  gridCard: {
+    width: '47%',
+    backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    backgroundColor: '#E6F0FA',
+    padding: 20,
+    marginBottom: 20,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 15,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.02)',
+  },
+  darkGridCard: { 
+    backgroundColor: '#1E293B', 
+    borderColor: '#334155' 
+  },
+  iconWrapper: {
+    width: 64,
+    height: 64,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginBottom: 16,
   },
-  darkIconCircle: { backgroundColor: '#334155' },
-  cardIcon: { fontSize: 24 },
-  cardTitle: { flex: 1, fontSize: 17, fontWeight: '600', color: '#1A1A1A' },
-  arrow: { fontSize: 18, color: '#007AFF' },
+  largeIcon: {
+    fontSize: 32,
+  },
+  gridTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+    textAlign: 'center',
+    marginBottom: 6,
+  },
+  gridSubtext: {
+    fontSize: 13,
+    color: '#888',
+    textAlign: 'center',
+  },
 });

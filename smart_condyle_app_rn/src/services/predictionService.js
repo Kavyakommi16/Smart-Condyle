@@ -1,4 +1,6 @@
-const BASE_URL = "http://10.15.232.189:8000";
+import { Platform } from 'react-native';
+
+const BASE_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
 
 // Dynamic Feature Analysis helper for unique image diagnosis
 const analyzeImageUriFeatures = (imageUri) => {
@@ -10,20 +12,10 @@ const analyzeImageUriFeatures = (imageUri) => {
   }
   const absHash = Math.abs(hash);
 
-  const outcomes = [
-    { prediction: "Normal", confidence: 96.8, severity: "None" },
-    { prediction: "Left Condyle Fracture", confidence: 93.4, severity: "Moderate" },
-    { prediction: "Right Condyle Fracture", confidence: 91.2, severity: "Moderate" },
-    { prediction: "Bilateral Condyle Fracture", confidence: 97.6, severity: "Severe" },
-  ];
-
-  const selected = outcomes[absHash % outcomes.length];
-  const dynamicConf = Math.min(99.4, Math.max(88.5, selected.confidence + ((absHash % 10) - 5) * 0.4));
-
   return {
-    prediction: selected.prediction,
-    confidence: Number(dynamicConf.toFixed(1)),
-    severity: selected.severity,
+    prediction: "Analysis Failed (Server Offline)",
+    confidence: 0.0,
+    severity: "Unknown",
   };
 };
 

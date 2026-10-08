@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 
-// Backend API URL - must match authService.js
-const API_URL = 'http://10.15.232.189:8000';
+const API_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
 
 // Get current logged-in user's UID
 const getUID = async () => {
@@ -115,6 +115,53 @@ export const deleteHistoryRecord = async (id) => {
     notifyDataSubscribers();
   } catch (e) {
     console.warn('Delete history API error:', e.message);
+  }
+};
+
+export const getDeletedHistory = async () => {
+  const uid = await getUID();
+  if (!uid) return [];
+  try {
+    const response = await fetch(`${API_URL}/history/deleted/get`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid }),
+    });
+    const data = await response.json();
+    return data.history || [];
+  } catch (e) {
+    console.warn('Get deleted history API error:', e.message);
+    return [];
+  }
+};
+
+export const restoreHistoryRecord = async (id) => {
+  const uid = await getUID();
+  if (!uid) return;
+  try {
+    await fetch(`${API_URL}/history/restore`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, record_id: id }),
+    });
+    notifyDataSubscribers();
+  } catch (e) {
+    console.warn('Restore history API error:', e.message);
+  }
+};
+
+export const permanentDeleteHistoryRecord = async (id) => {
+  const uid = await getUID();
+  if (!uid) return;
+  try {
+    await fetch(`${API_URL}/history/permanent_delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid, record_id: id }),
+    });
+    notifyDataSubscribers();
+  } catch (e) {
+    console.warn('Permanent delete history API error:', e.message);
   }
 };
 

@@ -11,6 +11,7 @@ export default function PatientRegistrationScreen({ navigation }) {
   const [injury, setInjury] = useState('');
   const [symptoms, setSymptoms] = useState('');
   const [history, setHistory] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleRegister = async () => {
     if (!name.trim() || !patientId.trim() || !age.trim()) {
@@ -39,9 +40,17 @@ export default function PatientRegistrationScreen({ navigation }) {
       imageUri: "",
     };
 
-    await savePatient(patient);
-    Alert.alert("Success 🎉", "Patient Registered Successfully");
-    navigation.replace('UploadScan', { patient });
+    setIsSaving(true);
+    
+    try {
+      await savePatient(patient);
+      // Removed blocking alerts for instant seamless navigation
+      navigation.replace('UploadScan', { patient });
+    } catch (err) {
+      if (Platform.OS === 'web') window.alert("Failed to register");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -95,8 +104,8 @@ export default function PatientRegistrationScreen({ navigation }) {
         <Text style={styles.label}>Medical History</Text>
         <TextInput style={[styles.input, styles.textArea]} placeholder="Previous fractures, surgeries..." value={history} onChangeText={setHistory} multiline spellCheck={false} autoCorrect={false} />
 
-        <TouchableOpacity style={styles.registerBtn} onPress={handleRegister}>
-          <Text style={styles.registerBtnText}>Register Patient</Text>
+        <TouchableOpacity style={styles.registerBtn} onPress={handleRegister} disabled={isSaving}>
+          <Text style={styles.registerBtnText}>{isSaving ? 'Registering...' : 'Register Patient'}</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

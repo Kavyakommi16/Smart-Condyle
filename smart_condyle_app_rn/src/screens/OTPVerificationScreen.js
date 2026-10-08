@@ -154,6 +154,8 @@ export default function OTPVerificationScreen({ route, navigation }) {
               onChangeText={handleOtpChange}
               keyboardType="numeric"
               maxLength={6}
+              autoComplete="one-time-code"
+              textContentType="oneTimeCode"
             />
 
             <TouchableOpacity style={styles.verifyBtn} onPress={handleVerify}>

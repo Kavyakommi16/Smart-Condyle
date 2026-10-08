@@ -20,6 +20,7 @@ import PatientHistoryScreen from './src/screens/PatientHistoryScreen';
 import ProfileScreen from './src/screens/ProfileScreen';
 import EditProfileScreen from './src/screens/EditProfileScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
+import RecycleBinScreen from './src/screens/RecycleBinScreen';
 
 const Stack = createStackNavigator();
 
@@ -61,6 +62,7 @@ export default function App() {
         <Stack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile' }} />
         <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile' }} />
         <Stack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings' }} />
+        <Stack.Screen name="RecycleBin" component={RecycleBinScreen} options={{ title: 'Recycle Bin', headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );

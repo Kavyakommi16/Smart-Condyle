@@ -4,9 +4,28 @@ import { subscribeDarkMode } from '../services/storageService';
 
 export default function ResultScreen({ route, navigation }) {
   const { patient } = route.params || {};
-  const severity = patient?.severity || 'Unknown';
-  const prediction = patient?.prediction || 'Unknown';
-  const confidence = patient?.confidence || 0;
+  const results = patient?.results || [{
+    prediction: patient?.prediction || 'Unknown',
+    confidence: patient?.confidence || 0,
+    severity: patient?.severity || 'Unknown',
+    imageUri: patient?.imageUri,
+  }];
+  
+  // Get highest severity
+  const getOverallSeverity = () => {
+    if (results.some(r => r.severity === 'Severe')) return 'Severe';
+    if (results.some(r => r.severity === 'Moderate')) return 'Moderate';
+    if (results.some(r => r.severity === 'Mild')) return 'Mild';
+    return 'None';
+  };
+  
+  const overallSeverity = getOverallSeverity();
+  const hasFracture = results.some(r => r.prediction?.includes('Fracture'));
+  const hasInvalid = results.every(r => r.prediction?.includes('Invalid'));
+  
+  const overallPrediction = hasInvalid ? 'Invalid Image (Not an X-Ray)' : (hasFracture ? 'Fracture Detected' : 'Normal');
+  const avgConfidence = results.reduce((sum, r) => sum + (typeof r.confidence === 'number' ? r.confidence : parseFloat(r.confidence) || 0), 0) / results.length;
+
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -14,8 +33,9 @@ export default function ResultScreen({ route, navigation }) {
     return () => unsub();
   }, []);
 
-  const getSeverityColor = () => {
-    switch (severity) {
+  const getSeverityColor = (sev) => {
+    if (!sev || sev === 'Unknown') return '#888888';
+    switch (sev) {
       case 'Severe': return '#FF3B30';
       case 'Moderate': return '#FF9500';
       case 'Mild': return '#FFCC00';
@@ -30,16 +50,44 @@ export default function ResultScreen({ route, navigation }) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={true}
       >
-        {/* Square Image Box (1:1 Aspect Ratio) */}
-        <View style={styles.imageBox}>
-          {patient?.imageUri ? (
-            <Image source={{ uri: patient.imageUri }} style={styles.image} resizeMode="contain" />
-          ) : (
-            <Text style={styles.noImageText}>🩻 No Image Available</Text>
-          )}
-        </View>
-
         <Text style={[styles.statusTitle, isDark && styles.darkText]}>Analysis Completed</Text>
+        <Text style={[styles.scanCountText, isDark && styles.darkSubtext]}>Analyzed {results.length} Scan{results.length > 1 ? 's' : ''}</Text>
+
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.resultsScroll}
+          contentContainerStyle={styles.resultsScrollContent}
+          snapToInterval={300}
+          decelerationRate="fast"
+        >
+          {results.map((res, index) => (
+            <View key={index} style={[styles.modernResultCard, isDark && styles.darkModernResultCard]}>
+              <View style={styles.imageBox}>
+                {res.imageUri ? (
+                  <Image source={{ uri: res.imageUri }} style={styles.image} resizeMode="cover" />
+                ) : (
+                  <Text style={styles.noImageText}>🩻 No Image</Text>
+                )}
+                <View style={styles.gradientOverlay} />
+              </View>
+              
+              <View style={styles.resultDetails}>
+                <Text style={[styles.predText, { color: res.prediction?.includes('Invalid') ? '#888888' : res.prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
+                  {res.prediction}
+                </Text>
+                <View style={styles.badgeRow}>
+                  <View style={[styles.badge, { backgroundColor: getSeverityColor(res.severity) }]}>
+                    <Text style={styles.badgeText}>{res.severity}</Text>
+                  </View>
+                  <Text style={[styles.confText, isDark && styles.darkSubtext]}>
+                    Conf: {typeof res.confidence === 'number' ? res.confidence.toFixed(1) : res.confidence}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))}
+        </ScrollView>
 
         <View style={[styles.card, isDark && styles.darkCard]}>
           <View style={[styles.row, isDark && styles.darkRow]}>
@@ -58,46 +106,59 @@ export default function ResultScreen({ route, navigation }) {
           </View>
 
           <View style={[styles.row, isDark && styles.darkRow]}>
-            <Text style={[styles.rowLabel, isDark && styles.darkSubtext]}>Prediction:</Text>
-            <Text style={[styles.rowVal, { fontWeight: 'bold', color: prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
-              {prediction}
-            </Text>
-          </View>
-
-          <View style={[styles.row, isDark && styles.darkRow]}>
-            <Text style={[styles.rowLabel, isDark && styles.darkSubtext]}>Confidence:</Text>
-            <Text style={[styles.rowVal, isDark && styles.darkText]}>{typeof confidence === 'number' ? confidence.toFixed(2) : confidence}%</Text>
-          </View>
-
-          <View style={[styles.row, isDark && styles.darkRow]}>
-            <Text style={[styles.rowLabel, isDark && styles.darkSubtext]}>Severity:</Text>
-            <View style={[styles.badge, { backgroundColor: getSeverityColor() }]}>
-              <Text style={styles.badgeText}>{severity}</Text>
+            <Text style={[styles.rowLabel, isDark && styles.darkSubtext]}>Overall Severity:</Text>
+            <View style={[styles.badge, { backgroundColor: getSeverityColor(overallSeverity) }]}>
+              <Text style={styles.badgeText}>{overallSeverity}</Text>
             </View>
           </View>
         </View>
 
-        <View style={[styles.card, isDark && styles.darkCard]}>
-          <Text style={[styles.cardTitle, isDark && styles.darkText]}>Medical Recommendations</Text>
-          <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Visit an Oral & Maxillofacial Surgeon</Text>
-          <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Soft diet for one week</Text>
-          <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Avoid hard chewing</Text>
-          <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Follow-up CT Scan if advised</Text>
-        </View>
+        {!hasInvalid ? (
+          <>
+            <View style={[styles.card, isDark && styles.darkCard]}>
+              <Text style={[styles.cardTitle, isDark && styles.darkText]}>Medical Recommendations</Text>
+              <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Visit an Oral & Maxillofacial Surgeon</Text>
+              <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Soft diet for one week</Text>
+              <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Avoid hard chewing</Text>
+              <Text style={[styles.recItem, isDark && styles.darkSubtext]}>✓ Follow-up CT Scan if advised</Text>
+            </View>
 
-        <TouchableOpacity
-          style={styles.actionBtn}
-          onPress={() => navigation.navigate('Treatment', { patient })}
-        >
-          <Text style={styles.actionBtnText}>💉 View Treatment Plan</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionBtn}
+              onPress={() => navigation.navigate('Treatment', { 
+                patient: { 
+                  ...patient, 
+                  prediction: overallPrediction, 
+                  severity: overallSeverity,
+                  confidence: avgConfidence.toFixed(2)
+                } 
+              })}
+            >
+              <Text style={styles.actionBtnText}>💉 View Treatment Plan</Text>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.actionBtn, styles.secondaryBtn, isDark && styles.darkSecondaryBtn]}
-          onPress={() => navigation.navigate('Report', { patient })}
-        >
-          <Text style={[styles.actionBtnText, styles.secondaryBtnText]}>📄 View Medical Report</Text>
-        </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.secondaryBtn, isDark && styles.darkSecondaryBtn]}
+              onPress={() => navigation.navigate('Report', { 
+                patient: { 
+                  ...patient, 
+                  prediction: overallPrediction, 
+                  severity: overallSeverity,
+                  confidence: avgConfidence.toFixed(2)
+                } 
+              })}
+            >
+              <Text style={[styles.actionBtnText, styles.secondaryBtnText]}>📄 View Medical Report</Text>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <TouchableOpacity
+            style={styles.actionBtn}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.actionBtnText}>Go Back</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -113,23 +174,67 @@ const styles = StyleSheet.create({
   darkContainer: { backgroundColor: '#0F172A' },
   scrollStyle: { flex: 1, width: '100%' },
   content: { padding: 20, flexGrow: 1, paddingBottom: 60 },
+  resultsScroll: {
+    marginBottom: 24,
+  },
+  resultsScrollContent: {
+    paddingHorizontal: 8,
+    paddingBottom: 8,
+  },
+  modernResultCard: {
+    width: 280,
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    marginHorizontal: 8,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  darkModernResultCard: {
+    backgroundColor: '#1E293B',
+    borderColor: '#334155',
+  },
   imageBox: {
     width: '100%',
-    maxWidth: 300,
-    aspectRatio: 1,
-    alignSelf: 'center',
-    backgroundColor: '#000000',
-    borderRadius: 16,
-    overflow: 'hidden',
+    height: 240,
+    backgroundColor: '#000',
+    position: 'relative',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 2,
-    borderColor: '#007AFF',
   },
   image: { width: '100%', height: '100%' },
+  gradientOverlay: {
+    position: 'absolute',
+    bottom: 0, left: 0, right: 0,
+    height: 60,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+  },
+  resultDetails: {
+    padding: 16,
+  },
+  predText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  confText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontWeight: '600',
+  },
   noImageText: { color: '#888', fontSize: 16 },
-  statusTitle: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', color: '#1A1A1A', marginBottom: 20 },
+  statusTitle: { fontSize: 28, fontWeight: '900', textAlign: 'center', color: '#1A1A1A', marginTop: 10 },
+  scanCountText: { fontSize: 14, textAlign: 'center', color: '#64748B', marginBottom: 20, fontWeight: '600' },
   darkText: { color: '#F8FAFC' },
   darkSubtext: { color: '#94A3B8' },
   card: {
