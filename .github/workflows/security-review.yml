@@ -74,6 +74,12 @@ jobs:
         run: |
           python security-scripts/dast-scanner.py
 
+      - name: Run Backend Vulnerability Test Cases
+        env:
+          API_URL: http://127.0.0.1:8000
+        run: |
+          python security-scripts/test_backend_vulnerabilities.py
+
       - name: Run Dependency & Supply Chain Vulnerability Scan
         run: |
           python security-scripts/dependency-scanner.py
