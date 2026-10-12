@@ -209,7 +209,7 @@ export default function PatientHistoryScreen({ navigation }) {
                           </View>
   
                           <View style={styles.info}>
-                            <Text style={[styles.prediction, { color: report.prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
+                            <Text style={[styles.prediction, { color: (report.prediction?.includes('Fracture') || report.prediction?.includes('Failed')) ? '#FF3B30' : report.prediction?.includes('Invalid') ? '#888888' : '#34C759' }]}>
                               {report.prediction}
                             </Text>
   

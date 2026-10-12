@@ -1,6 +1,4 @@
-import { Platform } from 'react-native';
-
-const BASE_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
+import { API_URL as BASE_URL } from '../config';
 
 // Dynamic Feature Analysis helper for unique image diagnosis
 const analyzeImageUriFeatures = (imageUri) => {

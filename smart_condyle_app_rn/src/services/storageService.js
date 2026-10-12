@@ -1,7 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
-
-const API_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
+import { API_URL } from '../config';
 
 // Get current logged-in user's UID
 const getUID = async () => {

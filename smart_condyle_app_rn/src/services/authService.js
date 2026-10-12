@@ -2,9 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SESSION_KEY = '@smart_condyle_active_session_v3';
 
-import { Platform } from 'react-native';
-
-const API_URL = Platform.OS === 'web' ? 'http://localhost:8000' : 'http://10.202.149.189:8000';
+import { API_URL } from '../config';
 
 // Password complexity regex: min 8 chars, at least 1 letter, 1 number, 1 special character
 export const validatePassword = (password) => {
@@ -164,12 +162,12 @@ export const validateRealtimeEmail = async (email) => {
     return { valid: false, status: 'EMPTY', message: 'Email address is required.' };
   }
   const cleanEmail = email.trim();
-  if (!cleanEmail.toLowerCase().endsWith('.com')) {
-    return { valid: false, status: 'NO_COM', message: 'Email must end with .com (e.g. doctor@hospital.com).' };
+  if (!cleanEmail.toLowerCase().endsWith('@gmail.com')) {
+    return { valid: false, status: 'NO_GMAIL', message: 'Email must end with @gmail.com (e.g. doctor@gmail.com).' };
   }
-  const comRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.com$/i;
-  if (!comRegex.test(cleanEmail)) {
-    return { valid: false, status: 'INVALID_FORMAT', message: 'Please enter a valid email address (e.g. kavya@hospital.com).' };
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+  if (!gmailRegex.test(cleanEmail)) {
+    return { valid: false, status: 'INVALID_FORMAT', message: 'Please enter a valid email address (e.g. doctor@gmail.com).' };
   }
 
   const isTaken = await checkEmailExists(cleanEmail);
@@ -177,7 +175,7 @@ export const validateRealtimeEmail = async (email) => {
     return { valid: false, status: 'ALREADY_TAKEN', message: 'Email is already registered. Please log in or use another email.' };
   }
 
-  return { valid: true, status: 'VALID', message: '✅ Valid .com email address.' };
+  return { valid: true, status: 'VALID', message: '✅ Valid @gmail.com address.' };
 };
 
 export const generateOTP = () => {

@@ -41,7 +41,16 @@ for d in [UPLOAD_FOLDER, DATA_DIR]:
 
 # ──────────────── MongoDB Database Helpers ────────────────
 MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
-client = MongoClient(MONGO_URI)
+LOCAL_MONGO_URI = "mongodb://localhost:27017"
+
+try:
+    client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=2500)
+    client.admin.command('ping')
+    print("MongoDB Connected: using Atlas Primary")
+except Exception as e:
+    print(f"Warning: Atlas MongoDB failed ({e}). Using Local MongoDB.")
+    client = MongoClient(LOCAL_MONGO_URI, serverSelectionTimeoutMS=2000)
+
 db = client["smart_condyle"]
 
 def export_tables_to_csv():
@@ -194,7 +203,14 @@ def register_user(req: RegisterRequest):
 def login_user(req: LoginRequest):
     clean_email = req.email.strip().lower()
     
+    # Check exact match first
     user = db.users.find_one({"email": clean_email, "password": req.password})
+    
+    # If not found, check case-insensitive password match (e.g., Sunny@123 vs sunny@123)
+    if not user:
+        potential = db.users.find_one({"email": clean_email})
+        if potential and potential.get("password", "").lower() == req.password.lower():
+            user = potential
     
     if user:
         safe_user = {k: v for k, v in user.items() if k not in ["_id", "password"]}

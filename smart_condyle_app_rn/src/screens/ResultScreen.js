@@ -16,6 +16,7 @@ export default function ResultScreen({ route, navigation }) {
     if (results.some(r => r.severity === 'Severe')) return 'Severe';
     if (results.some(r => r.severity === 'Moderate')) return 'Moderate';
     if (results.some(r => r.severity === 'Mild')) return 'Mild';
+    if (results.every(r => r.severity === 'Unknown' || !r.severity)) return 'Unknown';
     return 'None';
   };
   
@@ -73,7 +74,7 @@ export default function ResultScreen({ route, navigation }) {
               </View>
               
               <View style={styles.resultDetails}>
-                <Text style={[styles.predText, { color: res.prediction?.includes('Invalid') ? '#888888' : res.prediction?.includes('Fracture') ? '#FF3B30' : '#34C759' }]}>
+                <Text style={[styles.predText, { color: res.prediction?.includes('Invalid') ? '#888888' : (res.prediction?.includes('Fracture') || res.prediction?.includes('Failed')) ? '#FF3B30' : '#34C759' }]}>
                   {res.prediction}
                 </Text>
                 <View style={styles.badgeRow}>
