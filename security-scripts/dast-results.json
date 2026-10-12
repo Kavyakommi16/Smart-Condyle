@@ -1,0 +1,82 @@
+[
+  {
+    "category": "API Security / CORS",
+    "name": "Permissive CORS Wildcard / Origin Reflection",
+    "endpoint": "/",
+    "severity": "High",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "Access-Control-Allow-Origin returned: 'https://unauthorized-attacker-site.com' with Allow-Credentials: 'true'",
+    "remediation": "Configure CORS with an explicit allowlist of authorized mobile / web origins."
+  },
+  {
+    "category": "API Security / Headers",
+    "name": "Missing Protective Security Headers",
+    "endpoint": "/",
+    "severity": "Low",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "Missing defensive HTTP headers: x-content-type-options, x-frame-options, strict-transport-security, content-security-policy",
+    "remediation": "Implement middleware adding X-Content-Type-Options: nosniff, X-Frame-Options: DENY, and CSP."
+  },
+  {
+    "category": "Authentication & PHI Exposure",
+    "name": "Unauthenticated Access to Patient Records Dashboard",
+    "endpoint": "/dashboard",
+    "severity": "Critical",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "HTTP 200 OK received without authentication. Endpoint leaked clinical dashboard HTML (5704 bytes).",
+    "remediation": "Require authentication and verify Doctor role before serving patient data."
+  },
+  {
+    "category": "Authorization / IDOR",
+    "name": "Insecure Direct Object Reference (IDOR) on Patient Data",
+    "endpoint": "/patients/get",
+    "severity": "High",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "Endpoint accepted arbitrary client UID without Bearer token or session verification, returning HTTP 200.",
+    "remediation": "Authenticate requests via JWT/session tokens; derive caller UID on server rather than accepting client-supplied UID."
+  },
+  {
+    "category": "Authorization / IDOR",
+    "name": "Insecure Direct Object Reference (IDOR) on Diagnostic History",
+    "endpoint": "/history/get",
+    "severity": "High",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "Endpoint accepted arbitrary client UID without authentication token, returning HTTP 200.",
+    "remediation": "Enforce server-side session authentication on history retrieval."
+  },
+  {
+    "category": "Rate Limiting / Anti-Automation",
+    "name": "Lack of Rate Limiting on Login Endpoint",
+    "endpoint": "/login",
+    "severity": "Medium",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "10 consecutive invalid login requests in <2 seconds returned HTTP 200 without HTTP 429 Too Many Requests response.",
+    "remediation": "Implement IP and account-based rate limiting (e.g. slowapi with max 5 attempts/minute)."
+  },
+  {
+    "category": "Input Validation / File Upload",
+    "name": "Unrestricted File Upload Without MIME Validation",
+    "endpoint": "/predict",
+    "severity": "High",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "Uploaded text/plain file was accepted by route and crashed backend image processor (HTTP 500 Internal Server Error) instead of rejecting with HTTP 400/415.",
+    "remediation": "Validate MIME type (image/jpeg, image/png) and verify image header magic bytes prior to processing."
+  },
+  {
+    "category": "API Security / Error Handling",
+    "name": "Verbose Schema / Parser Error Exposure",
+    "endpoint": "/login",
+    "severity": "Low",
+    "status": "FAIL (Vulnerable)",
+    "vulnerable": true,
+    "evidence": "FastAPI default JSON validation error returned raw parser message: {\"detail\":[{\"type\":\"json_invalid\",\"loc\":[\"body\",0],\"msg\":\"JSON decode error\",\"input\":{},\"ctx\":{\"error\":\"Expecting value\"...",
+    "remediation": "Implement custom exception handler for RequestValidationError to return generic error messages."
+  }
+]
